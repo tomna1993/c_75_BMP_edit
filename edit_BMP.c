@@ -9,6 +9,8 @@
 #define EMODE_TURN_R "turn_right"
 #define EMODE_TURN_L "turn_left"
 
+#define BYTES_IN_PIXEL 3
+
 typedef struct BMP_header
 {
     // The header field used to identify the BMP and DIB file 
