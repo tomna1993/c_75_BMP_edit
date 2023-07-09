@@ -11,16 +11,17 @@
 
 int main(int argc, char **argv)
 {
-    if (argc <= 1)
+    if (argc < 3)
     {
-        printf ("Usage: <program> <edit_mode>\n");
+        printf ("Usage: <program> <BMP file> <edit_mode>\n");
         return EXIT_FAILURE;   
     }
 
+    char BMP_in[MAX_CHARS];
     char edit_mode[MAX_CHARS];
 
-    strcpy_s (edit_mode, MAX_CHARS, argv[1]);
-
+    strcpy_s (BMP_in, MAX_CHARS, argv[1]);
+    strcpy_s (edit_mode, MAX_CHARS, argv[2]);
 
     return EXIT_SUCCESS;   
 }
