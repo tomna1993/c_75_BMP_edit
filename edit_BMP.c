@@ -106,6 +106,11 @@ __int8 create_new_image (
     BMP_BITMAPINFOHEADER *bmp_DIB_header, 
     BMP_Pixel *pixel_data );
     
+__int8 turn_left (
+    BMP_header *bmp_header, 
+    BMP_BITMAPINFOHEADER *bmp_DIB_header,
+    BMP_Pixel *pixel_data );
+
 
 int main(int argc, char **argv)
 {
@@ -151,6 +156,18 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;   
     }
  
+    is_Error = turn_left (&bmp_header, &bmp_DIB_header, pixel_data);
+
+    if (is_Error == EXIT_FAILURE)
+    {
+        printf ("Failed to run command!\n");
+
+        free(pixel_data);
+        pixel_data = NULL;
+
+        return EXIT_FAILURE;   
+    }
+
     is_Error = create_new_image (BMP_out, &bmp_header, &bmp_DIB_header, pixel_data);
 
     if (is_Error == EXIT_FAILURE)
@@ -162,10 +179,11 @@ int main(int argc, char **argv)
 
         return EXIT_FAILURE;   
     }
- 
 
     free(pixel_data);
     pixel_data = NULL;
+
+    printf ("Editing picture is done!\n");
 
     return EXIT_SUCCESS;   
 }
@@ -235,7 +253,6 @@ __int8 read_BMP_header (
     return EXIT_SUCCESS;
 }
 
-
 void print_BMP_header (
     BMP_header *bmp_header, 
     BMP_BITMAPINFOHEADER *bmp_DIB_header )
@@ -275,10 +292,15 @@ __int8 read_pixel_data (
         return EXIT_FAILURE;
     }
 
-    fseek (fp, bmp_header->Image_data_address, SEEK_CUR);
+    fseek (fp, bmp_header->Image_data_address, SEEK_SET);
 
     for (__int32 i = 0; i < bmp_DIB_header->Num_of_Pixels; i++)
     {
+        if (i > 0 && i % bmp_DIB_header->BMP_Width == 0 && bmp_DIB_header->Padding_Bytes > 0)
+        {
+            fseek (fp, bmp_DIB_header->Padding_Bytes, SEEK_CUR);
+        }
+
         fread (&(pixel_data + i)->Blue, sizeof(__int8), 1, fp);   
         fread (&(pixel_data + i)->Green, sizeof(__int8), 1, fp);   
         fread (&(pixel_data + i)->Red, sizeof(__int8), 1, fp);   
@@ -326,12 +348,116 @@ __int8 create_new_image (
 
     for (__int32 i = 0; i < bmp_DIB_header->Num_of_Pixels; i++)
     {
+        if (i > 0 && i % bmp_DIB_header->BMP_Width == 0 && bmp_DIB_header->Padding_Bytes > 0)
+        {
+            for (int j = 0; j < bmp_DIB_header->Padding_Bytes; j++)
+            {
+                fputc (0, fp);
+            }
+        }
+
         fwrite (&(pixel_data + i)->Blue, sizeof(__int8), 1, fp);   
         fwrite (&(pixel_data + i)->Green, sizeof(__int8), 1, fp);   
         fwrite (&(pixel_data + i)->Red, sizeof(__int8), 1, fp);   
     }   
 
+    for (int j = 0; j < bmp_DIB_header->Padding_Bytes; j++)
+    {
+        fputc (0, fp);
+    }
+
     fclose(fp);
+
+    return EXIT_SUCCESS;
+}
+
+__int8 turn_left (
+    BMP_header *bmp_header, 
+    BMP_BITMAPINFOHEADER *bmp_DIB_header,
+    BMP_Pixel *pixel_data )
+{
+
+    BMP_Pixel *turn_left = calloc (bmp_DIB_header->Num_of_Pixels * BYTES_IN_PIXEL, sizeof(__int8));
+
+    __int32 j = 0;
+
+    if (bmp_DIB_header->Is_Bottom_Up)
+    {
+        for (__int32 col = 0; col < bmp_DIB_header->BMP_Width; col++)
+        {
+            __int32 index = (bmp_DIB_header->Num_of_Pixels - bmp_DIB_header->BMP_Width) + col;
+
+            for (__int32 row = 0; row < bmp_DIB_header->BMP_Height; row++)
+            {
+                (turn_left + j)->Blue = (pixel_data + index)->Blue;
+                (turn_left + j)->Green = (pixel_data + index)->Green;
+                (turn_left + j)->Red = (pixel_data + index)->Red;
+
+                index -= bmp_DIB_header->BMP_Width;
+
+                j++;
+            }
+        }
+
+        __int32 temp = bmp_DIB_header->BMP_Width;
+        bmp_DIB_header->BMP_Width = bmp_DIB_header->BMP_Height;
+        bmp_DIB_header->BMP_Height = temp;
+
+        bmp_DIB_header->Padding_Bytes = ((bmp_DIB_header->BMP_Width * BYTES_IN_PIXEL) % 4);
+
+        if (bmp_DIB_header->Padding_Bytes > 0)
+        {
+            bmp_DIB_header->Padding_Bytes = 4 - bmp_DIB_header->Padding_Bytes;     
+        }
+    }
+    else
+    {
+        for (__int32 col = bmp_DIB_header->BMP_Width; col > 0; col--)
+        {
+            __int32 index = col - 1;
+
+            for (__int32 row = (bmp_DIB_header->BMP_Height * -1); row > 0; row--)
+            {
+                (turn_left + j)->Blue = (pixel_data + index)->Blue;
+                (turn_left + j)->Green = (pixel_data + index)->Green;
+                (turn_left + j)->Red = (pixel_data + index)->Red;
+
+                index += bmp_DIB_header->BMP_Width;
+
+                j++;
+            }
+        }
+
+        __int32 temp = bmp_DIB_header->BMP_Width * -1;
+        bmp_DIB_header->BMP_Width = bmp_DIB_header->BMP_Height * -1;
+        bmp_DIB_header->BMP_Height = temp;
+
+        bmp_DIB_header->Padding_Bytes = ((bmp_DIB_header->BMP_Width * BYTES_IN_PIXEL) % 4);
+
+        if (bmp_DIB_header->Padding_Bytes > 0)
+        {
+            bmp_DIB_header->Padding_Bytes = 4 - bmp_DIB_header->Padding_Bytes;     
+        }
+    }
+
+    void *temp_point = memcpy(pixel_data, turn_left, bmp_DIB_header->Num_of_Pixels * BYTES_IN_PIXEL);
+
+    if (temp_point == NULL)
+    {
+        printf ("Error copying data!\n");
+
+        free(turn_left);
+        turn_left = NULL;
+
+        return EXIT_FAILURE;
+    }
+    else if (temp_point == pixel_data)
+    {
+        printf ("Pointers match after memory copy!\n");
+    }
+
+    free(turn_left);
+    turn_left = NULL;
 
     return EXIT_SUCCESS;
 }
