@@ -76,9 +76,29 @@ typedef struct BMP_BITMAPINFOHEADER
 }
 BMP_BITMAPINFOHEADER;
 
+typedef struct BMP_Pixel
+{
+    __int8 Blue;
+    __int8 Green;
+    __int8 Red;
+}
+BMP_Pixel;
 
-__int8 read_BMP_header(char filename[MAX_CHARS], BMP_header *bmp_header, BMP_BITMAPINFOHEADER *bmp_bitmap_info_header);
-void print_BMP_header(BMP_header *bmp_header, BMP_BITMAPINFOHEADER *bmp_bitmap_info_header);
+
+__int8 read_BMP_header (
+    char filename[MAX_CHARS], 
+    BMP_header *bmp_header, 
+    BMP_BITMAPINFOHEADER *bmp_DIB_header);
+
+void print_BMP_header (
+    BMP_header *bmp_header, 
+    BMP_BITMAPINFOHEADER *bmp_DIB_header );
+
+__int8 read_pixel_data (
+    char filename[MAX_CHARS], 
+    BMP_header *bmp_header, 
+    BMP_BITMAPINFOHEADER *bmp_bitmap_info_headerm, 
+    BMP_Pixel *pixel_data );
 
 
 int main(int argc, char **argv)
@@ -97,9 +117,9 @@ int main(int argc, char **argv)
     
     BMP_header bmp_header = { 0 };
 
-    BMP_BITMAPINFOHEADER bmp_bitmap_info_header = { 0 };
+    BMP_BITMAPINFOHEADER bmp_DIB_header = { 0 };
 
-    __int8 is_Error = read_BMP_header(BMP_in, &bmp_header, &bmp_bitmap_info_header);
+    __int8 is_Error = read_BMP_header(BMP_in, &bmp_header, &bmp_DIB_header);
 
     if (is_Error == EXIT_FAILURE)
     {
@@ -107,14 +127,26 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;   
     }
     
-    print_BMP_header(&bmp_header, &bmp_bitmap_info_header);
+    print_BMP_header(&bmp_header, &bmp_DIB_header);
     
-    return EXIT_SUCCESS;   
+    BMP_Pixel *pixel_data = calloc (bmp_DIB_header.Num_of_Pixels * BYTES_IN_PIXEL, sizeof(__int8));
 
+    is_Error = read_pixel_data (BMP_in, &bmp_header, &bmp_DIB_header, pixel_data);
+
+    if (is_Error == EXIT_FAILURE)
+    {
+        printf ("Can not open file!\n");
+        return EXIT_FAILURE;   
+    }
+ 
+    return EXIT_SUCCESS;   
 }
 
 
-__int8 read_BMP_header(char filename[MAX_CHARS], BMP_header *bmp_header, BMP_BITMAPINFOHEADER *bmp_bitmap_info_header)
+__int8 read_BMP_header (
+    char filename[MAX_CHARS], 
+    BMP_header *bmp_header, 
+    BMP_BITMAPINFOHEADER *bmp_DIB_header )
 {
     FILE *fp = fopen(filename, "rb");
 
@@ -138,63 +170,93 @@ __int8 read_BMP_header(char filename[MAX_CHARS], BMP_header *bmp_header, BMP_BIT
 
 
     // BMP DIB    
-    fread (&bmp_bitmap_info_header->Size, sizeof(bmp_bitmap_info_header->Size), 1, fp);
-    fread (&bmp_bitmap_info_header->BMP_Width, sizeof(bmp_bitmap_info_header->BMP_Width), 1, fp);
-    fread (&bmp_bitmap_info_header->BMP_Height, sizeof(bmp_bitmap_info_header->BMP_Height), 1, fp);
-    fread (&bmp_bitmap_info_header->Color_Planes, sizeof(bmp_bitmap_info_header->Color_Planes), 1, fp);
-    fread (&bmp_bitmap_info_header->Bits_per_pixel, sizeof(bmp_bitmap_info_header->Bits_per_pixel), 1, fp);
-    fread (&bmp_bitmap_info_header->Compression_method, sizeof(bmp_bitmap_info_header->Compression_method), 1, fp);
-    fread (&bmp_bitmap_info_header->Image_size, sizeof(bmp_bitmap_info_header->Image_size), 1, fp);
-    fread (&bmp_bitmap_info_header->Horiz_res, sizeof(bmp_bitmap_info_header->Horiz_res), 1, fp);
-    fread (&bmp_bitmap_info_header->Vert_res, sizeof(bmp_bitmap_info_header->Vert_res), 1, fp);
-    fread (&bmp_bitmap_info_header->Num_of_colors, sizeof(bmp_bitmap_info_header->Num_of_colors), 1, fp);
-    fread (&bmp_bitmap_info_header->Num_of_important_colors, sizeof(bmp_bitmap_info_header->Num_of_important_colors), 1, fp);
+    fread (&bmp_DIB_header->Size, sizeof(bmp_DIB_header->Size), 1, fp);
+    fread (&bmp_DIB_header->BMP_Width, sizeof(bmp_DIB_header->BMP_Width), 1, fp);
+    fread (&bmp_DIB_header->BMP_Height, sizeof(bmp_DIB_header->BMP_Height), 1, fp);
+    fread (&bmp_DIB_header->Color_Planes, sizeof(bmp_DIB_header->Color_Planes), 1, fp);
+    fread (&bmp_DIB_header->Bits_per_pixel, sizeof(bmp_DIB_header->Bits_per_pixel), 1, fp);
+    fread (&bmp_DIB_header->Compression_method, sizeof(bmp_DIB_header->Compression_method), 1, fp);
+    fread (&bmp_DIB_header->Image_size, sizeof(bmp_DIB_header->Image_size), 1, fp);
+    fread (&bmp_DIB_header->Horiz_res, sizeof(bmp_DIB_header->Horiz_res), 1, fp);
+    fread (&bmp_DIB_header->Vert_res, sizeof(bmp_DIB_header->Vert_res), 1, fp);
+    fread (&bmp_DIB_header->Num_of_colors, sizeof(bmp_DIB_header->Num_of_colors), 1, fp);
+    fread (&bmp_DIB_header->Num_of_important_colors, sizeof(bmp_DIB_header->Num_of_important_colors), 1, fp);
 
     fclose(fp);
 
-    if (bmp_bitmap_info_header->BMP_Height < 0)
+    if (bmp_DIB_header->BMP_Height < 0)
     {
-        bmp_bitmap_info_header->Is_Bottom_Up = false;   
+        bmp_DIB_header->Is_Bottom_Up = false;   
 
-        bmp_bitmap_info_header->Num_of_Pixels = bmp_bitmap_info_header->BMP_Width * (bmp_bitmap_info_header->BMP_Height * - 1);
+        bmp_DIB_header->Num_of_Pixels = bmp_DIB_header->BMP_Width * (bmp_DIB_header->BMP_Height * - 1);
     }
     else
     {
-        bmp_bitmap_info_header->Is_Bottom_Up = true;   
+        bmp_DIB_header->Is_Bottom_Up = true;   
 
-        bmp_bitmap_info_header->Num_of_Pixels = bmp_bitmap_info_header->BMP_Width * bmp_bitmap_info_header->BMP_Height;
+        bmp_DIB_header->Num_of_Pixels = bmp_DIB_header->BMP_Width * bmp_DIB_header->BMP_Height;
     }
 
-    bmp_bitmap_info_header->Padding_Bytes = ((bmp_bitmap_info_header->BMP_Width * BYTES_IN_PIXEL) % 4);
+    bmp_DIB_header->Padding_Bytes = ((bmp_DIB_header->BMP_Width * BYTES_IN_PIXEL) % 4);
 
-    if (bmp_bitmap_info_header->Padding_Bytes > 0)
+    if (bmp_DIB_header->Padding_Bytes > 0)
     {
-        bmp_bitmap_info_header->Padding_Bytes = 4 - bmp_bitmap_info_header->Padding_Bytes;     
+        bmp_DIB_header->Padding_Bytes = 4 - bmp_DIB_header->Padding_Bytes;     
     }
 
     return EXIT_SUCCESS;
 }
 
 
-void print_BMP_header(BMP_header *bmp_header, BMP_BITMAPINFOHEADER *bmp_bitmap_info_header)
+void print_BMP_header (
+    BMP_header *bmp_header, 
+    BMP_BITMAPINFOHEADER *bmp_DIB_header )
 {
     printf ("File type: %x\n", bmp_header->ID);
     printf ("The size of the BMP file in bytes: %i\n", bmp_header->Size);
     printf ("Image data starting address: %i\n", bmp_header->Image_data_address);
 
     // BMP DIB    
-    printf ("Size of header, in bytes: %i\n", bmp_bitmap_info_header->Size);
-    printf ("Bitmap width in pixels: %i\n", bmp_bitmap_info_header->BMP_Width);
-    printf ("Bitmap height in pixels: %i\n", bmp_bitmap_info_header->BMP_Height);
-    printf ("Number of color planes: %i\n", bmp_bitmap_info_header->Color_Planes);
-    printf ("Number of bits per pixel: %i\n", bmp_bitmap_info_header->Bits_per_pixel);
-    printf ("Compression method: %i\n", bmp_bitmap_info_header->Compression_method);
-    printf ("Image size: %i\n", bmp_bitmap_info_header->Image_size);
-    printf ("Horizontal resolution: %i\n", bmp_bitmap_info_header->Horiz_res);
-    printf ("Vertical resolution: %i\n", bmp_bitmap_info_header->Vert_res);
-    printf ("Number of colors in the color palette: %i\n", bmp_bitmap_info_header->Num_of_colors);
-    printf ("Number of important colors used: %i\n", bmp_bitmap_info_header->Num_of_important_colors);
-    printf ("Read BMP from Bottom-up: %i\n", bmp_bitmap_info_header->Is_Bottom_Up);
-    printf ("Number of pixels: %i\n", bmp_bitmap_info_header->Num_of_Pixels);
-    printf ("Number of padding bytes: %i\n", bmp_bitmap_info_header->Padding_Bytes);
+    printf ("Size of header, in bytes: %i\n", bmp_DIB_header->Size);
+    printf ("Bitmap width in pixels: %i\n", bmp_DIB_header->BMP_Width);
+    printf ("Bitmap height in pixels: %i\n", bmp_DIB_header->BMP_Height);
+    printf ("Number of color planes: %i\n", bmp_DIB_header->Color_Planes);
+    printf ("Number of bits per pixel: %i\n", bmp_DIB_header->Bits_per_pixel);
+    printf ("Compression method: %i\n", bmp_DIB_header->Compression_method);
+    printf ("Image size: %i\n", bmp_DIB_header->Image_size);
+    printf ("Horizontal resolution: %i\n", bmp_DIB_header->Horiz_res);
+    printf ("Vertical resolution: %i\n", bmp_DIB_header->Vert_res);
+    printf ("Number of colors in the color palette: %i\n", bmp_DIB_header->Num_of_colors);
+    printf ("Number of important colors used: %i\n", bmp_DIB_header->Num_of_important_colors);
+    printf ("Read BMP from Bottom-up: %i\n", bmp_DIB_header->Is_Bottom_Up);
+    printf ("Number of pixels: %i\n", bmp_DIB_header->Num_of_Pixels);
+    printf ("Number of padding bytes: %i\n", bmp_DIB_header->Padding_Bytes);
+}
+
+__int8 read_pixel_data (
+    char filename[MAX_CHARS], 
+    BMP_header *bmp_header, 
+    BMP_BITMAPINFOHEADER *bmp_DIB_header, 
+    BMP_Pixel *pixel_data )
+{
+    FILE *fp = fopen(filename, "rb");
+
+    if (fp == NULL)
+    {
+        printf ("Can not open file!\n");
+        return EXIT_FAILURE;
+    }
+
+    fseek (fp, bmp_header->Image_data_address, SEEK_CUR);
+
+    for (__int32 i = 0; i < bmp_DIB_header->Num_of_Pixels; i++)
+    {
+        fread (&(pixel_data + i)->Blue, sizeof(__int8), 1, fp);   
+        fread (&(pixel_data + i)->Green, sizeof(__int8), 1, fp);   
+        fread (&(pixel_data + i)->Red, sizeof(__int8), 1, fp);   
+    }
+
+    fclose(fp);
+
+    return EXIT_SUCCESS;
 }
