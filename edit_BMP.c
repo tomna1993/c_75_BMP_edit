@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -23,7 +24,8 @@ typedef struct BMP_header
     // Reserved
     __int32 Reserved;
 
-    // Starting address, of the byte where the bitmap image data (pixel array) can be found
+    // Starting address, of the byte where the bitmap image data 
+    // (pixel array) can be found
     __int32 Image_data_address;
 }
 BMP_header;
@@ -42,14 +44,16 @@ typedef struct BMP_BITMAPINFOHEADER
     // Number of color planes (must be 1)
     __int16 Color_Planes;
 
-    // Number of bits per pixel, which is the color depth of the image. Typical values are 1, 4, 8, 16, 24 and 32.
+    // Number of bits per pixel, which is the color depth of the image. 
+    // Typical values are 1, 4, 8, 16, 24 and 32.
     __int16 Bits_per_pixel;
 
     // Compression method being used.
-    // Val: 0	Identified by: BI_RGB	Compression method: none   	Comment: Most common
+    // Val: 0  Identified by: BI_RGB  Compression method: none 	Comment: Most common
     __int32 Compression_method;
 
-    // Image size. This is the size of the raw bitmap data; a dummy 0 can be given for BI_RGB bitmaps.
+    // Image size. This is the size of the raw bitmap data; 
+    // a dummy 0 can be given for BI_RGB bitmaps.
     __int32 Image_size;
 
     // Horizontal resolution of the image. (pixel per metre, signed integer)
@@ -61,16 +65,20 @@ typedef struct BMP_BITMAPINFOHEADER
     // Number of colors in the color palette, or 0 to default to 2n
     __int32 Num_of_colors;
 
-    // Number of important colors used, or 0 when every color is important; generally ignored
+    // Number of important colors used, or 0 when every color is important
     __int32 Num_of_important_colors;
+
+    __int32 Num_of_Pixels;
+
+    bool Is_Bottom_Up;
+
+    __int8 Padding_Bytes;
 }
 BMP_BITMAPINFOHEADER;
 
 
-__int8 func_read_BMP_header(char filename[MAX_CHARS], BMP_header *bmp_header, BMP_BITMAPINFOHEADER *bmp_bitmap_info_header);
-void func_print_BMP_header(BMP_header *bmp_header, BMP_BITMAPINFOHEADER *bmp_bitmap_info_header);
-
-
+__int8 read_BMP_header(char filename[MAX_CHARS], BMP_header *bmp_header, BMP_BITMAPINFOHEADER *bmp_bitmap_info_header);
+void print_BMP_header(BMP_header *bmp_header, BMP_BITMAPINFOHEADER *bmp_bitmap_info_header);
 
 
 int main(int argc, char **argv)
@@ -91,7 +99,7 @@ int main(int argc, char **argv)
 
     BMP_BITMAPINFOHEADER bmp_bitmap_info_header = { 0 };
 
-    __int8 is_Error = func_read_BMP_header(BMP_in, &bmp_header, &bmp_bitmap_info_header);
+    __int8 is_Error = read_BMP_header(BMP_in, &bmp_header, &bmp_bitmap_info_header);
 
     if (is_Error == EXIT_FAILURE)
     {
@@ -99,14 +107,14 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;   
     }
     
-    func_print_BMP_header(&bmp_header, &bmp_bitmap_info_header);
+    print_BMP_header(&bmp_header, &bmp_bitmap_info_header);
     
     return EXIT_SUCCESS;   
 
 }
 
 
-__int8 func_read_BMP_header(char filename[MAX_CHARS], BMP_header *bmp_header, BMP_BITMAPINFOHEADER *bmp_bitmap_info_header)
+__int8 read_BMP_header(char filename[MAX_CHARS], BMP_header *bmp_header, BMP_BITMAPINFOHEADER *bmp_bitmap_info_header)
 {
     FILE *fp = fopen(filename, "rb");
 
@@ -144,11 +152,31 @@ __int8 func_read_BMP_header(char filename[MAX_CHARS], BMP_header *bmp_header, BM
 
     fclose(fp);
 
+    if (bmp_bitmap_info_header->BMP_Height < 0)
+    {
+        bmp_bitmap_info_header->Is_Bottom_Up = false;   
+
+        bmp_bitmap_info_header->Num_of_Pixels = bmp_bitmap_info_header->BMP_Width * (bmp_bitmap_info_header->BMP_Height * - 1);
+    }
+    else
+    {
+        bmp_bitmap_info_header->Is_Bottom_Up = true;   
+
+        bmp_bitmap_info_header->Num_of_Pixels = bmp_bitmap_info_header->BMP_Width * bmp_bitmap_info_header->BMP_Height;
+    }
+
+    bmp_bitmap_info_header->Padding_Bytes = ((bmp_bitmap_info_header->BMP_Width * BYTES_IN_PIXEL) % 4);
+
+    if (bmp_bitmap_info_header->Padding_Bytes > 0)
+    {
+        bmp_bitmap_info_header->Padding_Bytes = 4 - bmp_bitmap_info_header->Padding_Bytes;     
+    }
+
     return EXIT_SUCCESS;
 }
 
 
-void func_print_BMP_header(BMP_header *bmp_header, BMP_BITMAPINFOHEADER *bmp_bitmap_info_header)
+void print_BMP_header(BMP_header *bmp_header, BMP_BITMAPINFOHEADER *bmp_bitmap_info_header)
 {
     printf ("File type: %x\n", bmp_header->ID);
     printf ("The size of the BMP file in bytes: %i\n", bmp_header->Size);
@@ -166,4 +194,7 @@ void func_print_BMP_header(BMP_header *bmp_header, BMP_BITMAPINFOHEADER *bmp_bit
     printf ("Vertical resolution: %i\n", bmp_bitmap_info_header->Vert_res);
     printf ("Number of colors in the color palette: %i\n", bmp_bitmap_info_header->Num_of_colors);
     printf ("Number of important colors used: %i\n", bmp_bitmap_info_header->Num_of_important_colors);
+    printf ("Read BMP from Bottom-up: %i\n", bmp_bitmap_info_header->Is_Bottom_Up);
+    printf ("Number of pixels: %i\n", bmp_bitmap_info_header->Num_of_Pixels);
+    printf ("Number of padding bytes: %i\n", bmp_bitmap_info_header->Padding_Bytes);
 }
