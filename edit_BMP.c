@@ -100,6 +100,12 @@ __int8 read_pixel_data (
     BMP_BITMAPINFOHEADER *bmp_bitmap_info_headerm, 
     BMP_Pixel *pixel_data );
 
+__int8 create_new_image (
+    char output[MAX_CHARS],
+    BMP_header *bmp_header, 
+    BMP_BITMAPINFOHEADER *bmp_DIB_header, 
+    BMP_Pixel *pixel_data );
+    
 
 int main(int argc, char **argv)
 {
@@ -110,9 +116,11 @@ int main(int argc, char **argv)
     }
 
     char BMP_in[MAX_CHARS];
+    char BMP_out[MAX_CHARS];
     char edit_mode[MAX_CHARS];
 
     strcpy_s (BMP_in, MAX_CHARS, argv[1]);
+    strcpy_s (BMP_out, MAX_CHARS, "Output.bmp");
     strcpy_s (edit_mode, MAX_CHARS, argv[2]);
     
     BMP_header bmp_header = { 0 };
@@ -136,9 +144,29 @@ int main(int argc, char **argv)
     if (is_Error == EXIT_FAILURE)
     {
         printf ("Failed to open the file!\n");
+
+        free(pixel_data);
+        pixel_data = NULL;
+
         return EXIT_FAILURE;   
     }
  
+    is_Error = create_new_image (BMP_out, &bmp_header, &bmp_DIB_header, pixel_data);
+
+    if (is_Error == EXIT_FAILURE)
+    {
+        printf ("Failed to create the file!\n");
+
+        free(pixel_data);
+        pixel_data = NULL;
+
+        return EXIT_FAILURE;   
+    }
+ 
+
+    free(pixel_data);
+    pixel_data = NULL;
+
     return EXIT_SUCCESS;   
 }
 
@@ -214,7 +242,7 @@ void print_BMP_header (
 {
     printf ("File type: %x\n", bmp_header->ID);
     printf ("The size of the BMP file in bytes: %i\n", bmp_header->Size);
-    printf ("Image data starting address: %i\n", bmp_header->Image_data_address);
+    printf ("Image data starting address: %x\n", bmp_header->Image_data_address);
 
     // BMP DIB    
     printf ("Size of header, in bytes: %i\n", bmp_DIB_header->Size);
@@ -255,6 +283,53 @@ __int8 read_pixel_data (
         fread (&(pixel_data + i)->Green, sizeof(__int8), 1, fp);   
         fread (&(pixel_data + i)->Red, sizeof(__int8), 1, fp);   
     }
+
+    fclose(fp);
+
+    return EXIT_SUCCESS;
+}
+
+__int8 create_new_image (
+    char output[MAX_CHARS],
+    BMP_header *bmp_header, 
+    BMP_BITMAPINFOHEADER *bmp_DIB_header, 
+    BMP_Pixel *pixel_data )
+{
+    FILE *fp = fopen(output, "wb");
+
+    if (fp == NULL)
+    {
+        printf ("Failed to create the file!\n");
+        return EXIT_FAILURE;
+    }
+
+    fwrite (&bmp_header->ID, sizeof(bmp_header->ID), 1, fp);
+    fwrite (&bmp_header->Size, sizeof(bmp_header->Size), 1, fp);
+    fwrite (&bmp_header->Reserved, sizeof(bmp_header->Reserved), 1, fp);
+    fwrite (&bmp_header->Image_data_address, sizeof(bmp_header->Image_data_address), 1, fp);
+
+
+    // BMP DIB    
+    fwrite (&bmp_DIB_header->Size, sizeof(bmp_DIB_header->Size), 1, fp);
+    fwrite (&bmp_DIB_header->BMP_Width, sizeof(bmp_DIB_header->BMP_Width), 1, fp);
+    fwrite (&bmp_DIB_header->BMP_Height, sizeof(bmp_DIB_header->BMP_Height), 1, fp);
+    fwrite (&bmp_DIB_header->Color_Planes, sizeof(bmp_DIB_header->Color_Planes), 1, fp);
+    fwrite (&bmp_DIB_header->Bits_per_pixel, sizeof(bmp_DIB_header->Bits_per_pixel), 1, fp);
+    fwrite (&bmp_DIB_header->Compression_method, sizeof(bmp_DIB_header->Compression_method), 1, fp);
+    fwrite (&bmp_DIB_header->Image_size, sizeof(bmp_DIB_header->Image_size), 1, fp);
+    fwrite (&bmp_DIB_header->Horiz_res, sizeof(bmp_DIB_header->Horiz_res), 1, fp);
+    fwrite (&bmp_DIB_header->Vert_res, sizeof(bmp_DIB_header->Vert_res), 1, fp);
+    fwrite (&bmp_DIB_header->Num_of_colors, sizeof(bmp_DIB_header->Num_of_colors), 1, fp);
+    fwrite (&bmp_DIB_header->Num_of_important_colors, sizeof(bmp_DIB_header->Num_of_important_colors), 1, fp);
+
+    fseek (fp, bmp_header->Image_data_address, SEEK_SET);
+
+    for (__int32 i = 0; i < bmp_DIB_header->Num_of_Pixels; i++)
+    {
+        fwrite (&(pixel_data + i)->Blue, sizeof(__int8), 1, fp);   
+        fwrite (&(pixel_data + i)->Green, sizeof(__int8), 1, fp);   
+        fwrite (&(pixel_data + i)->Red, sizeof(__int8), 1, fp);   
+    }   
 
     fclose(fp);
 
