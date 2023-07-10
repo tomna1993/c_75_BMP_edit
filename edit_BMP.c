@@ -123,7 +123,7 @@ int main(int argc, char **argv)
 
     if (is_Error == EXIT_FAILURE)
     {
-        printf ("Can not open file!\n");
+        printf ("Failed to open the file!\n");
         return EXIT_FAILURE;   
     }
     
@@ -135,7 +135,7 @@ int main(int argc, char **argv)
 
     if (is_Error == EXIT_FAILURE)
     {
-        printf ("Can not open file!\n");
+        printf ("Failed to open the file!\n");
         return EXIT_FAILURE;   
     }
  
@@ -152,7 +152,7 @@ __int8 read_BMP_header (
 
     if (fp == NULL)
     {
-        printf ("Can not open file!\n");
+        printf ("Failed to open the file!\n");
         return EXIT_FAILURE;
     }
 
@@ -243,7 +243,7 @@ __int8 read_pixel_data (
 
     if (fp == NULL)
     {
-        printf ("Can not open file!\n");
+        printf ("Failed to open the file!\n");
         return EXIT_FAILURE;
     }
 
