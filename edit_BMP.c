@@ -5,10 +5,9 @@
 
 #define MAX_CHARS 50
 
-#define EMODE_FLIP_H "flip_horizontally"
-#define EMODE_FLIP_V "flip_vertically"
-#define EMODE_TURN_R "turn_right"
-#define EMODE_TURN_L "turn_left"
+#define EMODE_FLIP_H "flip_h"
+#define EMODE_FLIP_V "flip_v"
+#define EMODE_TURN "turn"
 
 #define BYTES_IN_PIXEL 3
 
@@ -380,65 +379,54 @@ __int8 turn_left (
     BMP_Pixel *turn_left = calloc (bmp_DIB_header->Num_of_Pixels * BYTES_IN_PIXEL, sizeof(__int8));
 
     __int32 j = 0;
+    __int8 abs = 1;
+
+    __int32 index = 0;
 
     if (bmp_DIB_header->Is_Bottom_Up)
     {
-        for (__int32 col = 0; col < bmp_DIB_header->BMP_Width; col++)
-        {
-            __int32 index = (bmp_DIB_header->Num_of_Pixels - bmp_DIB_header->BMP_Width) + col;
-
-            for (__int32 row = 0; row < bmp_DIB_header->BMP_Height; row++)
-            {
-                (turn_left + j)->Blue = (pixel_data + index)->Blue;
-                (turn_left + j)->Green = (pixel_data + index)->Green;
-                (turn_left + j)->Red = (pixel_data + index)->Red;
-
-                index -= bmp_DIB_header->BMP_Width;
-
-                j++;
-            }
-        }
-
-        __int32 temp = bmp_DIB_header->BMP_Width;
-        bmp_DIB_header->BMP_Width = bmp_DIB_header->BMP_Height;
-        bmp_DIB_header->BMP_Height = temp;
-
-        bmp_DIB_header->Padding_Bytes = ((bmp_DIB_header->BMP_Width * BYTES_IN_PIXEL) % 4);
-
-        if (bmp_DIB_header->Padding_Bytes > 0)
-        {
-            bmp_DIB_header->Padding_Bytes = 4 - bmp_DIB_header->Padding_Bytes;     
-        }
-    }
+        abs = 1;
+    }    
     else
     {
-        for (__int32 col = bmp_DIB_header->BMP_Width; col > 0; col--)
+        abs = -1;
+    }
+    
+    
+    for (__int32 col = 0; col < bmp_DIB_header->BMP_Width; col++)
+    {
+        if (abs > 0)
         {
-            __int32 index = col - 1;
-
-            for (__int32 row = (bmp_DIB_header->BMP_Height * -1); row > 0; row--)
-            {
-                (turn_left + j)->Blue = (pixel_data + index)->Blue;
-                (turn_left + j)->Green = (pixel_data + index)->Green;
-                (turn_left + j)->Red = (pixel_data + index)->Red;
-
-                index += bmp_DIB_header->BMP_Width;
-
-                j++;
-            }
+            index = (bmp_DIB_header->Num_of_Pixels - bmp_DIB_header->BMP_Width) + col;
+        }
+        else
+        {
+            index = bmp_DIB_header->BMP_Width - col;
         }
 
-        __int32 temp = bmp_DIB_header->BMP_Width * -1;
-        bmp_DIB_header->BMP_Width = bmp_DIB_header->BMP_Height * -1;
-        bmp_DIB_header->BMP_Height = temp;
-
-        bmp_DIB_header->Padding_Bytes = ((bmp_DIB_header->BMP_Width * BYTES_IN_PIXEL) % 4);
-
-        if (bmp_DIB_header->Padding_Bytes > 0)
+        for (__int32 row = 0, end = bmp_DIB_header->BMP_Height * abs; row < end; row++)
         {
-            bmp_DIB_header->Padding_Bytes = 4 - bmp_DIB_header->Padding_Bytes;     
+            (turn_left + j)->Blue = (pixel_data + index)->Blue;
+            (turn_left + j)->Green = (pixel_data + index)->Green;
+            (turn_left + j)->Red = (pixel_data + index)->Red;
+
+            index -= bmp_DIB_header->BMP_Width * abs;
+
+            j++;
         }
     }
+
+    __int32 temp = bmp_DIB_header->BMP_Width * abs;
+    bmp_DIB_header->BMP_Width = bmp_DIB_header->BMP_Height * abs;
+    bmp_DIB_header->BMP_Height = temp;
+
+    bmp_DIB_header->Padding_Bytes = ((bmp_DIB_header->BMP_Width * BYTES_IN_PIXEL) % 4);
+
+    if (bmp_DIB_header->Padding_Bytes > 0)
+    {
+        bmp_DIB_header->Padding_Bytes = 4 - bmp_DIB_header->Padding_Bytes;     
+    }
+
 
     void *temp_point = memcpy(pixel_data, turn_left, bmp_DIB_header->Num_of_Pixels * BYTES_IN_PIXEL);
 
@@ -450,10 +438,6 @@ __int8 turn_left (
         turn_left = NULL;
 
         return EXIT_FAILURE;
-    }
-    else if (temp_point == pixel_data)
-    {
-        printf ("Pointers match after memory copy!\n");
     }
 
     free(turn_left);
