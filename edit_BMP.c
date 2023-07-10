@@ -125,9 +125,7 @@ __int8 func_read_BMP_header(char filename[MAX_CHARS], BMP_header *bmp_header, BM
     }
 
     fread (&bmp_header->Size, sizeof(bmp_header->Size), 1, fp);
-
     fread (&bmp_header->Reserved, sizeof(bmp_header->Reserved), 1, fp);
-
     fread (&bmp_header->Image_data_address, sizeof(bmp_header->Image_data_address), 1, fp);
 
 
@@ -153,11 +151,8 @@ __int8 func_read_BMP_header(char filename[MAX_CHARS], BMP_header *bmp_header, BM
 void func_print_BMP_header(BMP_header *bmp_header, BMP_BITMAPINFOHEADER *bmp_bitmap_info_header)
 {
     printf ("File type: %x\n", bmp_header->ID);
-
     printf ("The size of the BMP file in bytes: %i\n", bmp_header->Size);
-
     printf ("Image data starting address: %i\n", bmp_header->Image_data_address);
-
 
     // BMP DIB    
     printf ("Size of header, in bytes: %i\n", bmp_bitmap_info_header->Size);
