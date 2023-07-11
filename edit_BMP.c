@@ -449,8 +449,7 @@ __int8 turn_left (
     
     for (__int32 col = 0; col < bmp_DIB_header->BMP_Width; col++)
     {
-        start_index += abs;
-        index = start_index;
+        index = start_index + (col * abs);
 
         for (__int32 row = 0, end = bmp_DIB_header->BMP_Height * abs; row < end; row++)
         {
