@@ -2,12 +2,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define MAX_CHARS 50
-
-#define EMODE_FLIP_H "flip_h"
-#define EMODE_FLIP_V "flip_v"
-#define EMODE_TURN "turn"
 
 #define BYTES_IN_PIXEL 3
 
@@ -118,19 +115,17 @@ __int8 turn_left (
 
 int main(int argc, char **argv)
 {
-    if (argc < 3)
+    if (argc < 2)
     {
-        printf ("Usage: <program> <BMP file> <edit_mode>\n");
+        printf ("Usage: <program> <BMP file>\n");
         return EXIT_FAILURE;   
     }
 
-    char BMP_in[MAX_CHARS] = { ' ' };
-    char BMP_out[MAX_CHARS] = { ' ' };
-    char edit_mode[MAX_CHARS] = { ' ' };
+    char BMP_in[MAX_CHARS] = { '\0' };
+    char BMP_out[MAX_CHARS] = { '\0' };
 
     strcpy_s (BMP_in, MAX_CHARS, argv[1]);
     strcpy_s (BMP_out, MAX_CHARS, "Output.bmp");
-    strcpy_s (edit_mode, MAX_CHARS, argv[2]);
     
     BMP_header bmp_header = { 0 };
 
@@ -160,34 +155,69 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;   
     }
  
-    is_Error = turn_left (&bmp_header, &bmp_DIB_header, pixel_data);
+    printf ("Choose one option:\n");
+    printf ("1: Turn left\n");
+    printf ("2: Flip vertically\n");
+    printf ("3: Flip horizontally\n");
+    printf ("4: Save and Quit\n");
 
-    if (is_Error == EXIT_FAILURE)
+    __int8 edit_mode;
+
+    do
     {
-        printf ("Failed to run command!\n");
+        edit_mode = '0';
 
-        free(pixel_data);
-        pixel_data = NULL;
+        printf ("Edit: ");
+        edit_mode = getchar ();
 
-        return EXIT_FAILURE;   
-    }
+        switch (edit_mode)
+        {
+            case '1':
+                printf ("Turn left\n");
+                is_Error = turn_left (&bmp_header, &bmp_DIB_header, pixel_data);                
+                break;
 
-    is_Error = create_new_image (BMP_out, &bmp_header, &bmp_DIB_header, pixel_data);
+            case '2':
+                printf ("Do nothing\n");
+                break;
+            
+            case '3':
+                printf ("Do nothing\n");
+                break;
+    
+            case '0':
+                printf ("Wrong command!\n");
+                break;
+        }
 
-    if (is_Error == EXIT_FAILURE)
-    {
-        printf ("Failed to create the file!\n");
+        if (is_Error == EXIT_FAILURE)
+        {
+            printf ("Failed to edit the file!\n");
 
-        free(pixel_data);
-        pixel_data = NULL;
+            free(pixel_data);
+            pixel_data = NULL;
 
-        return EXIT_FAILURE;   
-    }
+            return EXIT_FAILURE;   
+        }
+
+        is_Error = create_new_image (BMP_out, &bmp_header, &bmp_DIB_header, pixel_data);
+
+        if (is_Error == EXIT_FAILURE)
+        {
+            printf ("Failed to create/modify the file!\n");
+
+            free(pixel_data);
+            pixel_data = NULL;
+
+            return EXIT_FAILURE;   
+        }
+    }   
+    while (edit_mode != '4');
 
     free(pixel_data);
     pixel_data = NULL;
 
-    printf ("Editing picture is done!\n");
+    printf ("File saved!\n");
 
     return EXIT_SUCCESS;   
 }
@@ -382,36 +412,36 @@ __int8 turn_left (
 {
 
     BMP_Pixel *turn_left = calloc (bmp_DIB_header->Num_of_Pixels * BYTES_IN_PIXEL, sizeof(__int8));
-
-    __int32 j = 0;
+    
     __int8 abs = 1;
+    // If image read/write method is bottom-up then image height will be positive
+    // Else it's negative
+    abs = bmp_DIB_header->Is_Bottom_Up ? 1 : -1;
+
+    __int32 start_index = 0;
+
+    if (abs == 1)
+    {
+        start_index = bmp_DIB_header->Num_of_Pixels - bmp_DIB_header->BMP_Width;
+    }
+    else
+    {
+        start_index = bmp_DIB_header->BMP_Width;
+    }
 
     __int32 index = 0;
-
-    // If image read/write method is bottom-up then image height will be positive
-    // Else we should convert it to negative
-    abs = bmp_DIB_header->Is_Bottom_Up ? 1 : -1;
+    __int32 j = 0;
     
     for (__int32 col = 0; col < bmp_DIB_header->BMP_Width; col++)
     {
-        if (abs == 1)
-        {
-            index = (bmp_DIB_header->Num_of_Pixels - bmp_DIB_header->BMP_Width) + col;
-        }
-        else
-        {
-            index = bmp_DIB_header->BMP_Width - col;
-        }
+        start_index += abs;
+        index = start_index;
 
         for (__int32 row = 0, end = bmp_DIB_header->BMP_Height * abs; row < end; row++)
         {
-            (turn_left + j)->Blue = (pixel_data + index)->Blue;
-            (turn_left + j)->Green = (pixel_data + index)->Green;
-            (turn_left + j)->Red = (pixel_data + index)->Red;
+            *(turn_left + j++) = *(pixel_data + index);
 
             index -= bmp_DIB_header->BMP_Width * abs;
-
-            j++;
         }
     }
 
