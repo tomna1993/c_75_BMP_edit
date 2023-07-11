@@ -111,12 +111,12 @@ __int8 turn_left (
     BMP_BITMAPINFOHEADER *bmp_DIB_header,
     BMP_Pixel *pixel_data );
 
-__int8 flip_h (
+__int8 flip_horizontally (
     BMP_header *bmp_header, 
     BMP_BITMAPINFOHEADER *bmp_DIB_header,
     BMP_Pixel *pixel_data );
 
-__int8 flip_v (
+__int8 flip_vertically (
     BMP_header *bmp_header, 
     BMP_BITMAPINFOHEADER *bmp_DIB_header,
     BMP_Pixel *pixel_data );
@@ -439,7 +439,7 @@ __int8 turn_left (
     return EXIT_SUCCESS;
 }
 
-__int8 flip_h (
+__int8 flip_horizontally (
     BMP_header *bmp_header, 
     BMP_BITMAPINFOHEADER *bmp_DIB_header,
     BMP_Pixel *pixel_data )
@@ -481,7 +481,7 @@ __int8 flip_h (
     return EXIT_SUCCESS;
 }
 
-__int8 flip_v (
+__int8 flip_vertically (
     BMP_header *bmp_header, 
     BMP_BITMAPINFOHEADER *bmp_DIB_header,
     BMP_Pixel *pixel_data )
@@ -568,12 +568,12 @@ __int8 edit_image (
 
             case 2:
                 printf ("Flip vertically\n");
-                is_Error = flip_v (bmp_header, bmp_DIB_header, pixel_data);
+                is_Error = flip_vertically (bmp_header, bmp_DIB_header, pixel_data);
                 break;
             
             case 3:
                 printf ("Flip horizontally\n");
-                is_Error = flip_h (bmp_header, bmp_DIB_header, pixel_data);
+                is_Error = flip_horizontally (bmp_header, bmp_DIB_header, pixel_data);
                 break;
 
             case 4:
