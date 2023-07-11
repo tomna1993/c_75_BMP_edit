@@ -117,6 +117,11 @@ __int8 flip_h (
     BMP_BITMAPINFOHEADER *bmp_DIB_header,
     BMP_Pixel *pixel_data );
 
+__int8 flip_v (
+    BMP_header *bmp_header, 
+    BMP_BITMAPINFOHEADER *bmp_DIB_header,
+    BMP_Pixel *pixel_data );
+
 
 
 int main(int argc, char **argv)
@@ -184,7 +189,8 @@ int main(int argc, char **argv)
                 break;
 
             case '2':
-                printf ("Do nothing\n");
+                printf ("Flip vertically\n");
+                is_Error = flip_v (&bmp_header, &bmp_DIB_header, pixel_data);
                 break;
             
             case '3':
@@ -505,6 +511,55 @@ __int8 flip_h (
         }
 
         *(flip_temp + index++) = *(pixel_data + j++);
+    }
+
+    // Copy the modified pixel data back into the original pixel data memory field
+    void *temp_point = memcpy(pixel_data, flip_temp, bmp_DIB_header->Num_of_Pixels * BYTES_IN_PIXEL);
+
+    if (temp_point == NULL)
+    {
+        printf ("Error copying data!\n");
+
+        free(flip_temp);
+        flip_temp = NULL;
+
+        return EXIT_FAILURE;
+    }
+
+    free(flip_temp);
+    flip_temp = NULL;
+
+    return EXIT_SUCCESS;
+}
+
+__int8 flip_v (
+    BMP_header *bmp_header, 
+    BMP_BITMAPINFOHEADER *bmp_DIB_header,
+    BMP_Pixel *pixel_data )
+{
+
+    BMP_Pixel *flip_temp = calloc (bmp_DIB_header->Num_of_Pixels * BYTES_IN_PIXEL, sizeof(__int8));
+
+     __int8 abs = 1;
+    // If image read/write method is bottom-up then image height will be positive
+    // Else it's negative
+    abs = bmp_DIB_header->Is_Bottom_Up ? 1 : -1;
+
+    __int32 count_temp = 0;
+    __int32 count_data = 0;
+
+    for (__int32 col = 0; col < bmp_DIB_header->BMP_Width; col++)
+    {
+        count_temp = bmp_DIB_header->BMP_Width - col;
+        count_data = col;
+        
+        for (__int32 row = 0, end = bmp_DIB_header->BMP_Height * abs; row < end; row++)
+        {
+            *(flip_temp + count_temp) = *(pixel_data + count_data);
+
+            count_temp += bmp_DIB_header->BMP_Width;
+            count_data += bmp_DIB_header->BMP_Width;
+        }
     }
 
     // Copy the modified pixel data back into the original pixel data memory field
