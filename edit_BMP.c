@@ -69,6 +69,11 @@ typedef struct BMP_BITMAPINFOHEADER
 
     __int32 Num_of_Pixels;
 
+    // Pixel data reading/writing method
+    // true: read/write pixel data starting from bottom-left pixel from left to right
+    //       each row from bottom-up
+    // false: read/write pixel data starting from top-left pixel from left to right
+    //       each row from top-down
     bool Is_Bottom_Up;
 
     __int8 Padding_Bytes;
@@ -119,9 +124,9 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;   
     }
 
-    char BMP_in[MAX_CHARS];
-    char BMP_out[MAX_CHARS];
-    char edit_mode[MAX_CHARS];
+    char BMP_in[MAX_CHARS] = { ' ' };
+    char BMP_out[MAX_CHARS] = { ' ' };
+    char edit_mode[MAX_CHARS] = { ' ' };
 
     strcpy_s (BMP_in, MAX_CHARS, argv[1]);
     strcpy_s (BMP_out, MAX_CHARS, "Output.bmp");
@@ -383,19 +388,13 @@ __int8 turn_left (
 
     __int32 index = 0;
 
-    if (bmp_DIB_header->Is_Bottom_Up)
-    {
-        abs = 1;
-    }    
-    else
-    {
-        abs = -1;
-    }
-    
+    // If image read/write method is bottom-up then image height will be positive
+    // Else we should convert it to negative
+    abs = bmp_DIB_header->Is_Bottom_Up ? 1 : -1;
     
     for (__int32 col = 0; col < bmp_DIB_header->BMP_Width; col++)
     {
-        if (abs > 0)
+        if (abs == 1)
         {
             index = (bmp_DIB_header->Num_of_Pixels - bmp_DIB_header->BMP_Width) + col;
         }
@@ -416,10 +415,12 @@ __int8 turn_left (
         }
     }
 
+    // Swap picture width with height
     __int32 temp = bmp_DIB_header->BMP_Width * abs;
     bmp_DIB_header->BMP_Width = bmp_DIB_header->BMP_Height * abs;
     bmp_DIB_header->BMP_Height = temp;
 
+    // Recalculate the padding bytes
     bmp_DIB_header->Padding_Bytes = ((bmp_DIB_header->BMP_Width * BYTES_IN_PIXEL) % 4);
 
     if (bmp_DIB_header->Padding_Bytes > 0)
@@ -427,7 +428,7 @@ __int8 turn_left (
         bmp_DIB_header->Padding_Bytes = 4 - bmp_DIB_header->Padding_Bytes;     
     }
 
-
+    // Copy the modified pixel data back into the original pixel data memory field
     void *temp_point = memcpy(pixel_data, turn_left, bmp_DIB_header->Num_of_Pixels * BYTES_IN_PIXEL);
 
     if (temp_point == NULL)
