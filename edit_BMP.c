@@ -166,39 +166,43 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;   
     }
  
+    printf ("\n");
     printf ("Choose one option:\n");
     printf ("1: Turn left\n");
     printf ("2: Flip vertically\n");
     printf ("3: Flip horizontally\n");
     printf ("4: Save and Quit\n");
+    printf ("\n");
 
-    __int8 edit_mode;
+    __int32 edit_mode = 0;
 
     do
     {
-        edit_mode = '0';
-
         printf ("Edit: ");
-        edit_mode = getchar ();
+        scanf_s ("%i", &edit_mode);
 
         switch (edit_mode)
         {
-            case '1':
+            case 1:
                 printf ("Turn left\n");
                 is_Error = turn_left (&bmp_header, &bmp_DIB_header, pixel_data);                
                 break;
 
-            case '2':
+            case 2:
                 printf ("Flip vertically\n");
                 is_Error = flip_v (&bmp_header, &bmp_DIB_header, pixel_data);
                 break;
             
-            case '3':
+            case 3:
                 printf ("Flip horizontally\n");
                 is_Error = flip_h (&bmp_header, &bmp_DIB_header, pixel_data);
                 break;
-    
-            case '0':
+
+            case 4:
+                printf ("Exit editing, file is saved\n");
+                break;
+
+            default:
                 printf ("Wrong command!\n");
                 break;
         }
@@ -225,12 +229,10 @@ int main(int argc, char **argv)
             return EXIT_FAILURE;   
         }
     }   
-    while (edit_mode != '4');
+    while (edit_mode != 4);
 
     free(pixel_data);
     pixel_data = NULL;
-
-    printf ("File saved!\n");
 
     return EXIT_SUCCESS;   
 }
