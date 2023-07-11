@@ -112,6 +112,12 @@ __int8 turn_left (
     BMP_BITMAPINFOHEADER *bmp_DIB_header,
     BMP_Pixel *pixel_data );
 
+__int8 flip_h (
+    BMP_header *bmp_header, 
+    BMP_BITMAPINFOHEADER *bmp_DIB_header,
+    BMP_Pixel *pixel_data );
+
+
 
 int main(int argc, char **argv)
 {
@@ -182,7 +188,8 @@ int main(int argc, char **argv)
                 break;
             
             case '3':
-                printf ("Do nothing\n");
+                printf ("Flip horizontally\n");
+                is_Error = flip_h (&bmp_header, &bmp_DIB_header, pixel_data);
                 break;
     
             case '0':
@@ -473,6 +480,48 @@ __int8 turn_left (
 
     free(turn_left);
     turn_left = NULL;
+
+    return EXIT_SUCCESS;
+}
+
+__int8 flip_h (
+    BMP_header *bmp_header, 
+    BMP_BITMAPINFOHEADER *bmp_DIB_header,
+    BMP_Pixel *pixel_data )
+{
+
+    BMP_Pixel *flip_temp = calloc (bmp_DIB_header->Num_of_Pixels * BYTES_IN_PIXEL, sizeof(__int8));
+
+    __int32 index = 0;
+    __int32 j = 0;
+    __int32 row = 1;
+
+    while (j < bmp_DIB_header->Num_of_Pixels)
+    {
+        // Reach the end of row
+        if (j % bmp_DIB_header->BMP_Width == 0)
+        {
+            index = bmp_DIB_header->Num_of_Pixels - (bmp_DIB_header->BMP_Width * row++);
+        }
+
+        *(flip_temp + index++) = *(pixel_data + j++);
+    }
+
+    // Copy the modified pixel data back into the original pixel data memory field
+    void *temp_point = memcpy(pixel_data, flip_temp, bmp_DIB_header->Num_of_Pixels * BYTES_IN_PIXEL);
+
+    if (temp_point == NULL)
+    {
+        printf ("Error copying data!\n");
+
+        free(flip_temp);
+        flip_temp = NULL;
+
+        return EXIT_FAILURE;
+    }
+
+    free(flip_temp);
+    flip_temp = NULL;
 
     return EXIT_SUCCESS;
 }
