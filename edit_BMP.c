@@ -2,7 +2,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #define MAX_CHARS 50
 
@@ -98,7 +97,7 @@ void print_BMP_header (
 __int8 read_pixel_data (
     char filename[MAX_CHARS], 
     BMP_header *bmp_header, 
-    BMP_BITMAPINFOHEADER *bmp_bitmap_info_headerm, 
+    BMP_BITMAPINFOHEADER *bmp_DIB_header, 
     BMP_Pixel *pixel_data );
 
 __int8 create_new_image (
