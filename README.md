@@ -18,6 +18,6 @@ Open a BMP file then edit and save a new file. Use CL arguments to ask the user 
 
 - read pixel data into an allocated memory field
 
-- get edit mode information as command line argument and create a method to edit the pixel data
+- get edit mode information and create turn, flip vertically and flip horizontally functions to edit the pixel data
 
 - save the edited image as a new image
