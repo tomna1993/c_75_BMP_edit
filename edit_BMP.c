@@ -86,7 +86,7 @@ BMP_Pixel;
 
 
 __int8 read_BMP_header (
-    char filename[MAX_CHARS], 
+    char BMP_in[MAX_CHARS], 
     BMP_header *bmp_header, 
     BMP_BITMAPINFOHEADER *bmp_DIB_header);
 
@@ -95,13 +95,13 @@ void print_BMP_header (
     BMP_BITMAPINFOHEADER *bmp_DIB_header );
 
 __int8 read_pixel_data (
-    char filename[MAX_CHARS], 
+    char BMP_in[MAX_CHARS], 
     BMP_header *bmp_header, 
     BMP_BITMAPINFOHEADER *bmp_DIB_header, 
     BMP_Pixel *pixel_data );
 
 __int8 create_new_image (
-    char output[MAX_CHARS],
+    char BMP_out[MAX_CHARS],
     BMP_header *bmp_header, 
     BMP_BITMAPINFOHEADER *bmp_DIB_header, 
     BMP_Pixel *pixel_data );
@@ -117,6 +117,12 @@ __int8 flip_h (
     BMP_Pixel *pixel_data );
 
 __int8 flip_v (
+    BMP_header *bmp_header, 
+    BMP_BITMAPINFOHEADER *bmp_DIB_header,
+    BMP_Pixel *pixel_data );
+
+__int8 edit_image (
+    char BMP_out[MAX_CHARS],
     BMP_header *bmp_header, 
     BMP_BITMAPINFOHEADER *bmp_DIB_header,
     BMP_Pixel *pixel_data );
@@ -165,84 +171,27 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;   
     }
  
-    printf ("\n");
-    printf ("Choose one option:\n");
-    printf ("1: Turn left\n");
-    printf ("2: Flip vertically\n");
-    printf ("3: Flip horizontally\n");
-    printf ("4: Save and Quit\n");
-    printf ("\n");
-
-    __int32 edit_mode = 0;
-
-    do
-    {
-        printf ("Edit: ");
-        scanf_s ("%i", &edit_mode);
-
-        switch (edit_mode)
-        {
-            case 1:
-                printf ("Turn left\n");
-                is_Error = turn_left (&bmp_header, &bmp_DIB_header, pixel_data);                
-                break;
-
-            case 2:
-                printf ("Flip vertically\n");
-                is_Error = flip_v (&bmp_header, &bmp_DIB_header, pixel_data);
-                break;
-            
-            case 3:
-                printf ("Flip horizontally\n");
-                is_Error = flip_h (&bmp_header, &bmp_DIB_header, pixel_data);
-                break;
-
-            case 4:
-                printf ("Exit editing, file is saved\n");
-                break;
-
-            default:
-                printf ("Wrong command!\n");
-                break;
-        }
-
-        if (is_Error == EXIT_FAILURE)
-        {
-            printf ("Failed to edit the file!\n");
-
-            free(pixel_data);
-            pixel_data = NULL;
-
-            return EXIT_FAILURE;   
-        }
-
-        is_Error = create_new_image (BMP_out, &bmp_header, &bmp_DIB_header, pixel_data);
-
-        if (is_Error == EXIT_FAILURE)
-        {
-            printf ("Failed to create/modify the file!\n");
-
-            free(pixel_data);
-            pixel_data = NULL;
-
-            return EXIT_FAILURE;   
-        }
-    }   
-    while (edit_mode != 4);
+    is_Error = edit_image (BMP_out, &bmp_header, &bmp_DIB_header, pixel_data);
 
     free(pixel_data);
     pixel_data = NULL;
+
+    if (is_Error == EXIT_FAILURE)
+    {
+        printf ("Failed to edit image!\n");
+        return EXIT_FAILURE;   
+    }
 
     return EXIT_SUCCESS;   
 }
 
 
 __int8 read_BMP_header (
-    char filename[MAX_CHARS], 
+    char BMP_in[MAX_CHARS], 
     BMP_header *bmp_header, 
     BMP_BITMAPINFOHEADER *bmp_DIB_header )
 {
-    FILE *fp = fopen(filename, "rb");
+    FILE *fp = fopen(BMP_in, "rb");
 
     if (fp == NULL)
     {
@@ -327,12 +276,12 @@ void print_BMP_header (
 }
 
 __int8 read_pixel_data (
-    char filename[MAX_CHARS], 
+    char BMP_in[MAX_CHARS], 
     BMP_header *bmp_header, 
     BMP_BITMAPINFOHEADER *bmp_DIB_header, 
     BMP_Pixel *pixel_data )
 {
-    FILE *fp = fopen(filename, "rb");
+    FILE *fp = fopen(BMP_in, "rb");
 
     if (fp == NULL)
     {
@@ -360,12 +309,12 @@ __int8 read_pixel_data (
 }
 
 __int8 create_new_image (
-    char output[MAX_CHARS],
+    char BMP_out[MAX_CHARS],
     BMP_header *bmp_header, 
     BMP_BITMAPINFOHEADER *bmp_DIB_header, 
     BMP_Pixel *pixel_data )
 {
-    FILE *fp = fopen(output, "wb");
+    FILE *fp = fopen(BMP_out, "wb");
 
     if (fp == NULL)
     {
@@ -577,6 +526,81 @@ __int8 flip_v (
 
     free(flip_temp);
     flip_temp = NULL;
+
+    return EXIT_SUCCESS;
+}
+
+__int8 edit_image (
+    char BMP_out[MAX_CHARS],
+    BMP_header *bmp_header, 
+    BMP_BITMAPINFOHEADER *bmp_DIB_header,
+    BMP_Pixel *pixel_data )
+{
+    printf ("\n");
+    printf ("Choose one option:\n");
+    printf ("1: Turn left\n");
+    printf ("2: Flip vertically\n");
+    printf ("3: Flip horizontally\n");
+    printf ("4: Save and Quit\n");
+    printf ("\n");
+
+    char input_stdin[MAX_CHARS] = { '\0' };
+    __int32 edit_mode = 0;
+
+    __int8 is_Error = 0;
+    
+    do
+    {
+        do
+        {
+            printf ("Edit: ");
+            fgets (input_stdin, MAX_CHARS, stdin);
+            edit_mode = atoi(input_stdin);
+        }
+        while (edit_mode < 1 || edit_mode > 4);
+
+        switch (edit_mode)
+        {
+            case 1:
+                printf ("Turn left\n");
+                is_Error = turn_left (bmp_header, bmp_DIB_header, pixel_data);                
+                break;
+
+            case 2:
+                printf ("Flip vertically\n");
+                is_Error = flip_v (bmp_header, bmp_DIB_header, pixel_data);
+                break;
+            
+            case 3:
+                printf ("Flip horizontally\n");
+                is_Error = flip_h (bmp_header, bmp_DIB_header, pixel_data);
+                break;
+
+            case 4:
+                printf ("Exit editing, file is saved!\n");
+                return EXIT_SUCCESS;
+                break;
+
+            default:
+                printf ("Wrong command!\n");
+                break;
+        }
+        
+        if (is_Error == EXIT_FAILURE)
+        {
+            printf ("Failed to edit the file!\n");
+            return EXIT_FAILURE;   
+        }
+
+        is_Error = create_new_image (BMP_out, bmp_header, bmp_DIB_header, pixel_data);
+
+        if (is_Error == EXIT_FAILURE)
+        {
+            printf ("Failed to create/modify the file!\n");
+            return EXIT_FAILURE;   
+        }
+    }
+    while (edit_mode != 4);
 
     return EXIT_SUCCESS;
 }
